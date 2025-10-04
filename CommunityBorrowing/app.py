@@ -17,18 +17,51 @@ st.markdown("""
 <style>
 /* --- Global --- */
 html, body {
-  background-color: #f5f7fa;
+  background-color: #f9fafb;
   font-family: 'Inter', sans-serif;
   margin: 0;
   padding: 0;
 }
 
-h1, h2, h3 {
+/* Title */
+h1 {
   text-align: center;
   color: #1e293b;
   font-weight: 700;
+  margin-bottom: 0.5rem;
 }
 
+/* Nav bar */
+.nav-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 2rem 0;
+}
+
+.nav-button {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-button:hover {
+  background: #e5e7eb;
+}
+
+.nav-button.active {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: white;
+  font-weight: 600;
+}
+
+/* Buttons */
 .stButton>button {
   width: 100%;
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
@@ -47,6 +80,7 @@ h1, h2, h3 {
   transform: translateY(-2px);
 }
 
+/* Inputs */
 .stSelectbox, .stTextInput, .stNumberInput {
   border-radius: 12px !important;
   padding: 0.8rem !important;
@@ -55,6 +89,7 @@ h1, h2, h3 {
   box-shadow: 0 2px 5px rgba(0,0,0,0.04);
 }
 
+/* Container */
 .block-container {
   padding-top: 1rem;
   padding-bottom: 3rem;
@@ -101,33 +136,31 @@ def show_message(success: bool, msg: str):
 # === UI Pages ===
 def create_user_ui():
     st.header("🧍 Create User")
-    with st.container():
-        name = st.text_input("Full Name")
-        phone = st.text_input("Phone Number")
-        if st.button("Create User"):
-            if not name or not phone:
-                st.warning("Please fill both name and phone.")
+    name = st.text_input("Full Name")
+    phone = st.text_input("Phone Number")
+    if st.button("Create User"):
+        if not name or not phone:
+            st.warning("Please fill both name and phone.")
+        else:
+            res = UserDAO.create_user(name, phone)
+            if res:
+                show_message(True, f"User '{name}' created!")
             else:
-                res = UserDAO.create_user(name, phone)
-                if res:
-                    show_message(True, f"User '{name}' created!")
-                else:
-                    show_message(False, "Failed to create user.")
+                show_message(False, "Failed to create user.")
 
 def insert_item_ui():
     st.header("📦 Insert Item")
-    with st.container():
-        name = st.text_input("Item Name")
-        cost = st.number_input("Cost per Day", min_value=0.0, step=1.0)
-        if st.button("Add Item"):
-            if not name:
-                st.warning("Enter item name.")
+    name = st.text_input("Item Name")
+    cost = st.number_input("Cost per Day", min_value=0.0, step=1.0)
+    if st.button("Add Item"):
+        if not name:
+            st.warning("Enter item name.")
+        else:
+            res = ItemDAO.insert_item(name, cost)
+            if res:
+                show_message(True, f"Item '{name}' added!")
             else:
-                res = ItemDAO.insert_item(name, cost)
-                if res:
-                    show_message(True, f"Item '{name}' added!")
-                else:
-                    show_message(False, "Failed to add item.")
+                show_message(False, "Failed to add item.")
 
 def borrow_item_ui():
     st.header("📥 Borrow Item")
@@ -212,6 +245,7 @@ def list_items_ui():
 # === Main Navigation ===
 def main():
     st.title("🤝 Community Borrowing System")
+
     pages = {
         "Create User": create_user_ui,
         "Insert Item": insert_item_ui,
@@ -220,7 +254,22 @@ def main():
         "List Users": list_users_ui,
         "List Items": list_items_ui
     }
-    choice = st.sidebar.radio("Menu", list(pages.keys()))
+
+    # horizontal nav bar
+    choice = st.radio(
+        "Menu",
+        list(pages.keys()),
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+
+    # highlight active tab
+    st.markdown(f"""
+        <div class="nav-container">
+            {''.join([f'<button class="nav-button {"active" if c==choice else ""}">{c}</button>' for c in pages.keys()])}
+        </div>
+    """, unsafe_allow_html=True)
+
     pages[choice]()
 
 if __name__ == "__main__":
