@@ -1,3 +1,5 @@
+# app.py (place at root of CommunityBorrowing folder, next to src/)
+
 import sys
 import os
 import streamlit as st
@@ -10,103 +12,49 @@ from dao.user_dao import UserDAO
 from dao.item_dao import ItemDAO
 from dao.supabase_client import supabase
 
-# === Page config ===
+# === Page config & CSS ===
 st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="centered")
 
-# === Global CSS for Mobile-First ===
 st.markdown("""
 <style>
-/* Global Reset */
-html, body, [class*="css"] {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
+/* Mobile-first styling */
+html, body {
   background-color: #f5f7fa;
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3 {
+  text-align: center;
   color: #2d3436;
 }
 
-/* Title */
-h1, h2, h3 {
-  text-align: center;
-  font-weight: 700;
-}
-
-/* Buttons */
 .stButton>button {
-  background: #f3f4f6;
-  color: #1f2937;
+  width: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: white;
   border: none;
   border-radius: 12px;
-  padding: 0.8rem 1rem;
+  padding: 0.75rem;
   font-size: 1rem;
-  font-weight: 500;
-  width: 100%;
-  margin-bottom: 10px;
-  transition: all 0.2s ease-in-out;
-}
-.stButton>button:hover {
-  background: #e5e7eb;
-}
-.stButton>button:focus, .stButton>button:active {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: white !important;
-  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-/* Inputs */
-.stTextInput>div>div>input,
-.stNumberInput>div>div>input,
-.stSelectbox>div>div>select {
+.stButton>button:hover {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  transform: scale(1.02);
+}
+
+.stSelectbox, .stTextInput, .stNumberInput {
   border-radius: 10px !important;
   padding: 0.6rem !important;
   font-size: 1rem !important;
 }
 
-/* Container */
 .block-container {
-  padding-top: 1rem !important;
-  padding-bottom: 3rem !important;
-  max-width: 100% !important;
-  margin: auto !important;
-}
-
-/* Bill Card */
-.bill-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-top: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  font-size: 1rem;
-}
-.bill-header {
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-}
-.bill-line {
-  margin: 6px 0;
-}
-.bill-total {
-  font-weight: 700;
-  color: #4f46e5;
-  margin-top: 10px;
-  font-size: 1.1rem;
-}
-
-/* Mobile First Fixes */
-@media (max-width: 768px) {
-  .stButton>button {
-    font-size: 0.9rem;
-    padding: 0.7rem;
-  }
-  .stTextInput>div>div>input,
-  .stNumberInput>div>div>input,
-  .stSelectbox>div>div>select {
-    font-size: 0.9rem !important;
-    padding: 0.5rem !important;
-  }
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+  max-width: 600px;
+  margin: auto;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -166,6 +114,7 @@ def borrow_item_ui():
     if st.button("Borrow Item"):
         try:
             user_id = int(user_choice.split(" - ")[0])
+            # Extract item name for BorrowService
             name_part = item_choice.split(" - ", 1)[1]
             item_name = name_part.rsplit("(", 1)[0].strip()
 
@@ -179,22 +128,12 @@ def borrow_item_ui():
 
 def return_items_ui():
     st.header("🔁 Return Items & Generate Bill")
-    user_id = st.text_input("Enter User ID")
-
+    user_id = st.text_input("User ID to Return Items")
     if st.button("Return Items"):
         try:
-            bill = BorrowService.return_items(user_id)
-            if bill is not None:
-                st.markdown("<div class='bill-card'>", unsafe_allow_html=True)
-                st.markdown("<div class='bill-header'>🧾 Borrowing Bill</div>", unsafe_allow_html=True)
-
-                for line in bill.get("items", []):
-                    st.markdown(
-                        f"<div class='bill-line'>• {line['item_name']} → ₹{line['cost']} × {line['days']} days = <b>₹{line['total']}</b></div>",
-                        unsafe_allow_html=True
-                    )
-                st.markdown(f"<div class='bill-total'>Total Bill: ₹{bill.get('total', 0)}</div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+            ok = BorrowService.return_items(user_id)
+            if ok is not None:
+                show_message(True, f"Returned items. Bill = {ok}")
             else:
                 show_message(False, "Failed to return items.")
         except Exception as e:
@@ -233,27 +172,16 @@ def list_items_ui():
 # === Main Navigation ===
 def main():
     st.title("🤝 Community Borrowing System")
-
     pages = {
-        "👤 Create User": create_user_ui,
-        "📦 Insert Item": insert_item_ui,
-        "📥 Borrow Item": borrow_item_ui,
-        "🔁 Return & Bill": return_items_ui,
-        "👥 List Users": list_users_ui,
-        "📋 List Items": list_items_ui
+        "Create User": create_user_ui,
+        "Insert Item": insert_item_ui,
+        "Borrow Item": borrow_item_ui,
+        "Return & Bill": return_items_ui,
+        "List Users": list_users_ui,
+        "List Items": list_items_ui
     }
-
-    if "active_page" not in st.session_state:
-        st.session_state.active_page = list(pages.keys())[0]
-
-    # Responsive Nav (stack vertically on mobile)
-    cols = st.columns(len(pages))
-    for i, (name, func) in enumerate(pages.items()):
-        if cols[i].button(name, key=f"nav_{i}"):
-            st.session_state.active_page = name
-
-    # Render selected page
-    pages[st.session_state.active_page]()
+    choice = st.sidebar.radio("Menu", list(pages.keys()))
+    pages[choice]()
 
 if __name__ == "__main__":
     main()
