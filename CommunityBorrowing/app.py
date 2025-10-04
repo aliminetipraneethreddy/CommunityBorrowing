@@ -10,83 +10,52 @@ from dao.user_dao import UserDAO
 from dao.item_dao import ItemDAO
 from dao.supabase_client import supabase
 
-# === Page config & CSS ===
+# === Page config ===
 st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="centered")
 
+# === Global CSS ===
 st.markdown("""
 <style>
-/* --- Global --- */
+/* Global styles */
 html, body {
-  background-color: #f9fafb;
+  background-color: #f5f7fa;
   font-family: 'Inter', sans-serif;
-  margin: 0;
-  padding: 0;
 }
 
 /* Title */
-h1 {
+h1, h2, h3 {
   text-align: center;
-  color: #1e293b;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-/* Nav bar */
-.nav-container {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 1rem 0 2rem 0;
-}
-
-.nav-button {
-  background: #f3f4f6;
-  border: none;
-  border-radius: 10px;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.nav-button:hover {
-  background: #e5e7eb;
-}
-
-.nav-button.active {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: white;
-  font-weight: 600;
+  color: #2d3436;
 }
 
 /* Buttons */
 .stButton>button {
-  width: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: white !important;
+  background: #f3f4f6;
+  color: #1f2937;
   border: none;
-  border-radius: 14px;
-  padding: 0.9rem;
-  font-size: 1rem;
-  font-weight: 600;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  transition: all 0.25s ease-in-out;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  width: 100%;
+  transition: all 0.2s ease-in-out;
 }
 
 .stButton>button:hover {
-  background: linear-gradient(90deg, #4f46e5, #7c3aed);
-  transform: translateY(-2px);
+  background: #e5e7eb;
+}
+
+.stButton>button:focus, .stButton>button:active {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: white !important;
+  font-weight: 600;
 }
 
 /* Inputs */
 .stSelectbox, .stTextInput, .stNumberInput {
-  border-radius: 12px !important;
-  padding: 0.8rem !important;
+  border-radius: 10px !important;
+  padding: 0.6rem !important;
   font-size: 1rem !important;
-  background-color: #ffffff !important;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
 }
 
 /* Container */
@@ -97,31 +66,28 @@ h1 {
   margin: auto;
 }
 
-/* Card styles */
-.card {
-  background-color: #ffffff;
-  border-radius: 14px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-}
-
-/* Bill card */
+/* Bill Card */
 .bill-card {
-  background: #ffffff;
-  border-left: 6px solid #6366f1;
-  border-radius: 14px;
-  padding: 1.2rem;
-  margin-top: 1rem;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   font-size: 1rem;
-  line-height: 1.6;
 }
-
-.bill-card h3 {
-  margin: 0;
-  font-size: 1.25rem;
+.bill-header {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+.bill-line {
+  margin: 4px 0;
+}
+.bill-total {
+  font-weight: 700;
   color: #4f46e5;
+  margin-top: 10px;
+  font-size: 1.1rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -181,6 +147,7 @@ def borrow_item_ui():
     if st.button("Borrow Item"):
         try:
             user_id = int(user_choice.split(" - ")[0])
+            # Extract item name
             name_part = item_choice.split(" - ", 1)[1]
             item_name = name_part.rsplit("(", 1)[0].strip()
 
@@ -195,18 +162,20 @@ def borrow_item_ui():
 def return_items_ui():
     st.header("🔁 Return Items & Generate Bill")
     user_id = st.text_input("Enter User ID")
+
     if st.button("Return Items"):
         try:
-            ok = BorrowService.return_items(user_id)
-            if ok is not None:
-                st.markdown(f"""
-                <div class="bill-card">
-                  <h3>🧾 Return Bill</h3>
-                  <p><b>User ID:</b> {user_id}</p>
-                  <p><b>Total Amount:</b> ₹{ok}</p>
-                  <p>✅ Thank you for using the Community Borrowing System!</p>
-                </div>
-                """, unsafe_allow_html=True)
+            bill = BorrowService.return_items(user_id)
+            if bill is not None:
+                # Fancy Bill UI
+                st.markdown("<div class='bill-card'>", unsafe_allow_html=True)
+                st.markdown("<div class='bill-header'>🧾 Borrowing Bill</div>", unsafe_allow_html=True)
+
+                for line in bill.get("items", []):
+                    st.markdown(f"<div class='bill-line'>• {line['item_name']} → ₹{line['cost']} x {line['days']} days = ₹{line['total']}</div>", unsafe_allow_html=True)
+
+                st.markdown(f"<div class='bill-total'>Total Bill: ₹{bill.get('total', 0)}</div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
             else:
                 show_message(False, "Failed to return items.")
         except Exception as e:
@@ -219,12 +188,7 @@ def list_users_ui():
         st.info("No users found.")
     else:
         for u in users:
-            st.markdown(f"""
-            <div class="card">
-              <b>{u['user_id']} - {u['name']}</b><br>
-              📞 {u['phone_number']}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"**{u['user_id']} - {u['name']}** • 📞 {u['phone_number']}")
 
 def list_items_ui():
     st.header("📋 Items")
@@ -235,10 +199,15 @@ def list_items_ui():
         for it in items:
             color = "#10b981" if it.get("status","").lower() == "available" else "#ef4444"
             st.markdown(f"""
-            <div class="card">
+            <div style="
+              background-color:#fff;
+              border-radius:10px;
+              padding:10px;
+              margin-bottom:6px;
+              box-shadow:0 2px 4px rgba(0,0,0,0.05);
+            ">
               <b>{it['item_id']} - {it['item_name']}</b><br>
-              💰 Cost: ₹{it.get('cost')}<br>
-              <span style="color:{color}; font-weight:600">{it.get('status')}</span>
+              Cost: ₹{it.get('cost')} | <span style="color:{color}; font-weight:600">{it.get('status')}</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -247,30 +216,26 @@ def main():
     st.title("🤝 Community Borrowing System")
 
     pages = {
-        "Create User": create_user_ui,
-        "Insert Item": insert_item_ui,
-        "Borrow Item": borrow_item_ui,
-        "Return & Bill": return_items_ui,
-        "List Users": list_users_ui,
-        "List Items": list_items_ui
+        "👤 Create User": create_user_ui,
+        "📦 Insert Item": insert_item_ui,
+        "📥 Borrow Item": borrow_item_ui,
+        "🔁 Return & Bill": return_items_ui,
+        "👥 List Users": list_users_ui,
+        "📋 List Items": list_items_ui
     }
 
-    # horizontal nav bar
-    choice = st.radio(
-        "Menu",
-        list(pages.keys()),
-        horizontal=True,
-        label_visibility="collapsed"
-    )
+    # Track active page
+    if "active_page" not in st.session_state:
+        st.session_state.active_page = list(pages.keys())[0]
 
-    # highlight active tab
-    st.markdown(f"""
-        <div class="nav-container">
-            {''.join([f'<button class="nav-button {"active" if c==choice else ""}">{c}</button>' for c in pages.keys()])}
-        </div>
-    """, unsafe_allow_html=True)
+    # Horizontal nav bar
+    cols = st.columns(len(pages))
+    for i, (name, func) in enumerate(pages.items()):
+        if cols[i].button(name, key=f"nav_{i}"):
+            st.session_state.active_page = name
 
-    pages[choice]()
+    # Render selected page
+    pages[st.session_state.active_page]()
 
 if __name__ == "__main__":
     main()
