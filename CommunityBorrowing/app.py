@@ -1,4 +1,4 @@
-\import sys
+import sys
 import os
 import streamlit as st
 
@@ -8,6 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from services.borrow_service import BorrowService
 from dao.user_dao import UserDAO
 from dao.item_dao import ItemDAO
+from dao.supabase_client import supabase
 
 # === Page config & CSS ===
 st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="centered")
@@ -28,36 +29,6 @@ h1 {
   color: #1e293b;
   font-weight: 700;
   margin-bottom: 0.5rem;
-}
-
-/* Nav bar */
-.nav-container {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 1rem 0 2rem 0;
-}
-
-.nav-button {
-  background: #f3f4f6;
-  border: none;
-  border-radius: 10px;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.nav-button:hover {
-  background: #e5e7eb;
-}
-
-.nav-button.active {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: white;
-  font-weight: 600;
 }
 
 /* Buttons */
@@ -218,56 +189,3 @@ def list_users_ui():
         st.info("No users found.")
     else:
         for u in users:
-            st.markdown(f"""
-            <div class="card">
-              <b>{u['user_id']} - {u['name']}</b><br>
-              📞 {u['phone_number']}
-            </div>
-            """, unsafe_allow_html=True)
-
-def list_items_ui():
-    st.header("📋 Items")
-    items = ItemDAO.list_items() or []
-    if not items:
-        st.info("No items found.")
-    else:
-        for it in items:
-            color = "#10b981" if it.get("status","").lower() == "available" else "#ef4444"
-            st.markdown(f"""
-            <div class="card">
-              <b>{it['item_id']} - {it['item_name']}</b><br>
-              💰 Cost: ₹{it.get('cost')}<br>
-              <span style="color:{color}; font-weight:600">{it.get('status')}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-# === Main Navigation ===
-def main():
-    st.title("🤝 Community Borrowing System")
-
-    pages = {
-        "Create User": create_user_ui,
-        "Insert Item": insert_item_ui,
-        "Borrow Item": borrow_item_ui,
-        "Return & Bill": return_items_ui,
-        "List Users": list_users_ui,
-        "List Items": list_items_ui
-    }
-
-    # --- Session state for active page ---
-    if "active_page" not in st.session_state:
-        st.session_state.active_page = list(pages.keys())[0]  # default first page
-
-    # --- Custom nav bar ---
-    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    cols = st.columns(len(pages))
-    for i, (name, func) in enumerate(pages.items()):
-        if cols[i].button(name, use_container_width=True):
-            st.session_state.active_page = name
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # --- Render selected page ---
-    pages[st.session_state.active_page]()
-
-if __name__ == "__main__":
-    main()
