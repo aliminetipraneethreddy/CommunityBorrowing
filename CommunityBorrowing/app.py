@@ -8,7 +8,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from services.borrow_service import BorrowService
 from dao.user_dao import UserDAO
 from dao.item_dao import ItemDAO
-from dao.supabase_client import supabase
 
 # === Page config ===
 st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="centered")
@@ -16,19 +15,16 @@ st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="c
 # === Global CSS ===
 st.markdown("""
 <style>
-/* Global styles */
 html, body {
   background-color: #f5f7fa;
   font-family: 'Inter', sans-serif;
 }
 
-/* Title */
 h1, h2, h3 {
   text-align: center;
   color: #2d3436;
 }
 
-/* Buttons */
 .stButton>button {
   background: #f3f4f6;
   color: #1f2937;
@@ -40,25 +36,21 @@ h1, h2, h3 {
   width: 100%;
   transition: all 0.2s ease-in-out;
 }
-
 .stButton>button:hover {
   background: #e5e7eb;
 }
-
 .stButton>button:focus, .stButton>button:active {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
   color: white !important;
   font-weight: 600;
 }
 
-/* Inputs */
 .stSelectbox, .stTextInput, .stNumberInput {
   border-radius: 10px !important;
   padding: 0.6rem !important;
   font-size: 1rem !important;
 }
 
-/* Container */
 .block-container {
   padding-top: 1rem;
   padding-bottom: 3rem;
@@ -89,8 +81,25 @@ h1, h2, h3 {
   margin-top: 10px;
   font-size: 1.1rem;
 }
+
+/* Borrow Card */
+.borrow-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 15px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  font-size: 1rem;
+}
+.borrow-header {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  color: #16a34a;
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # === Helper for messages ===
 def show_message(success: bool, msg: str):
@@ -98,6 +107,7 @@ def show_message(success: bool, msg: str):
         st.success(f"✅ {msg}")
     else:
         st.error(f"❌ {msg}")
+
 
 # === UI Pages ===
 def create_user_ui():
@@ -114,6 +124,7 @@ def create_user_ui():
             else:
                 show_message(False, "Failed to create user.")
 
+
 def insert_item_ui():
     st.header("📦 Insert Item")
     name = st.text_input("Item Name")
@@ -127,6 +138,7 @@ def insert_item_ui():
                 show_message(True, f"Item '{name}' added!")
             else:
                 show_message(False, "Failed to add item.")
+
 
 def borrow_item_ui():
     st.header("📥 Borrow Item")
@@ -147,17 +159,25 @@ def borrow_item_ui():
     if st.button("Borrow Item"):
         try:
             user_id = int(user_choice.split(" - ")[0])
-            # Extract item name
             name_part = item_choice.split(" - ", 1)[1]
             item_name = name_part.rsplit("(", 1)[0].strip()
 
             ok = BorrowService.borrow_item(user_id, item_name)
             if ok:
-                show_message(True, f"Borrowed '{item_name}' successfully.")
+                # Fancy Borrow Card
+                st.markdown(f"""
+                <div class="borrow-card">
+                  <div class="borrow-header">✅ Borrow Successful</div>
+                  <div><b>User:</b> {user_choice}</div>
+                  <div><b>Item:</b> {item_name}</div>
+                  <div><b>Status:</b> <span style="color:#16a34a; font-weight:600;">Borrowed</span></div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
                 show_message(False, f"Could not borrow '{item_name}'.")
         except Exception as e:
             show_message(False, f"Error: {e}")
+
 
 def return_items_ui():
     st.header("🔁 Return Items & Generate Bill")
@@ -166,13 +186,24 @@ def return_items_ui():
     if st.button("Return Items"):
         try:
             bill = BorrowService.return_items(user_id)
-            if bill is not None:
-                # Fancy Bill UI
+
+            # Handle Supabase tuple (data, error)
+            if isinstance(bill, tuple):
+                data, error = bill
+                if error:
+                    show_message(False, f"Supabase Error: {error}")
+                    return
+                bill = data
+
+            if bill and isinstance(bill, dict):
                 st.markdown("<div class='bill-card'>", unsafe_allow_html=True)
                 st.markdown("<div class='bill-header'>🧾 Borrowing Bill</div>", unsafe_allow_html=True)
 
                 for line in bill.get("items", []):
-                    st.markdown(f"<div class='bill-line'>• {line['item_name']} → ₹{line['cost']} x {line['days']} days = ₹{line['total']}</div>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<div class='bill-line'>• {line['item_name']} → ₹{line['cost']} x {line['days']} days = ₹{line['total']}</div>",
+                        unsafe_allow_html=True
+                    )
 
                 st.markdown(f"<div class='bill-total'>Total Bill: ₹{bill.get('total', 0)}</div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
@@ -180,6 +211,7 @@ def return_items_ui():
                 show_message(False, "Failed to return items.")
         except Exception as e:
             show_message(False, f"Error: {e}")
+
 
 def list_users_ui():
     st.header("👥 Users")
@@ -189,6 +221,7 @@ def list_users_ui():
     else:
         for u in users:
             st.markdown(f"**{u['user_id']} - {u['name']}** • 📞 {u['phone_number']}")
+
 
 def list_items_ui():
     st.header("📋 Items")
@@ -211,6 +244,7 @@ def list_items_ui():
             </div>
             """, unsafe_allow_html=True)
 
+
 # === Main Navigation ===
 def main():
     st.title("🤝 Community Borrowing System")
@@ -224,18 +258,16 @@ def main():
         "📋 List Items": list_items_ui
     }
 
-    # Track active page
     if "active_page" not in st.session_state:
         st.session_state.active_page = list(pages.keys())[0]
 
-    # Horizontal nav bar
     cols = st.columns(len(pages))
     for i, (name, func) in enumerate(pages.items()):
         if cols[i].button(name, key=f"nav_{i}"):
             st.session_state.active_page = name
 
-    # Render selected page
     pages[st.session_state.active_page]()
+
 
 if __name__ == "__main__":
     main()
