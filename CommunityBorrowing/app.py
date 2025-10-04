@@ -1,5 +1,3 @@
-# app.py (place at root of CommunityBorrowing folder, next to src/)
-
 import sys
 import os
 import streamlit as st
@@ -17,37 +15,44 @@ st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="c
 
 st.markdown("""
 <style>
-/* Mobile-first styling */
+/* --- Global --- */
 html, body {
   background-color: #f5f7fa;
   font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 h1, h2, h3 {
   text-align: center;
-  color: #2d3436;
+  color: #1e293b;
+  font-weight: 700;
 }
 
 .stButton>button {
   width: 100%;
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: white;
+  color: white !important;
   border: none;
-  border-radius: 12px;
-  padding: 0.75rem;
+  border-radius: 14px;
+  padding: 0.9rem;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  transition: all 0.25s ease-in-out;
 }
 
 .stButton>button:hover {
   background: linear-gradient(90deg, #4f46e5, #7c3aed);
-  transform: scale(1.02);
+  transform: translateY(-2px);
 }
 
 .stSelectbox, .stTextInput, .stNumberInput {
-  border-radius: 10px !important;
-  padding: 0.6rem !important;
+  border-radius: 12px !important;
+  padding: 0.8rem !important;
   font-size: 1rem !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
 }
 
 .block-container {
@@ -55,6 +60,33 @@ h1, h2, h3 {
   padding-bottom: 3rem;
   max-width: 600px;
   margin: auto;
+}
+
+/* Card styles */
+.card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+}
+
+/* Bill card */
+.bill-card {
+  background: #ffffff;
+  border-left: 6px solid #6366f1;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-top: 1rem;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.bill-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #4f46e5;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -69,31 +101,33 @@ def show_message(success: bool, msg: str):
 # === UI Pages ===
 def create_user_ui():
     st.header("🧍 Create User")
-    name = st.text_input("Full Name")
-    phone = st.text_input("Phone Number")
-    if st.button("Create User"):
-        if not name or not phone:
-            st.warning("Please fill both name and phone.")
-        else:
-            res = UserDAO.create_user(name, phone)
-            if res:
-                show_message(True, f"User '{name}' created!")
+    with st.container():
+        name = st.text_input("Full Name")
+        phone = st.text_input("Phone Number")
+        if st.button("Create User"):
+            if not name or not phone:
+                st.warning("Please fill both name and phone.")
             else:
-                show_message(False, "Failed to create user.")
+                res = UserDAO.create_user(name, phone)
+                if res:
+                    show_message(True, f"User '{name}' created!")
+                else:
+                    show_message(False, "Failed to create user.")
 
 def insert_item_ui():
     st.header("📦 Insert Item")
-    name = st.text_input("Item Name")
-    cost = st.number_input("Cost per Day", min_value=0.0, step=1.0)
-    if st.button("Add Item"):
-        if not name:
-            st.warning("Enter item name.")
-        else:
-            res = ItemDAO.insert_item(name, cost)
-            if res:
-                show_message(True, f"Item '{name}' added!")
+    with st.container():
+        name = st.text_input("Item Name")
+        cost = st.number_input("Cost per Day", min_value=0.0, step=1.0)
+        if st.button("Add Item"):
+            if not name:
+                st.warning("Enter item name.")
             else:
-                show_message(False, "Failed to add item.")
+                res = ItemDAO.insert_item(name, cost)
+                if res:
+                    show_message(True, f"Item '{name}' added!")
+                else:
+                    show_message(False, "Failed to add item.")
 
 def borrow_item_ui():
     st.header("📥 Borrow Item")
@@ -114,7 +148,6 @@ def borrow_item_ui():
     if st.button("Borrow Item"):
         try:
             user_id = int(user_choice.split(" - ")[0])
-            # Extract item name for BorrowService
             name_part = item_choice.split(" - ", 1)[1]
             item_name = name_part.rsplit("(", 1)[0].strip()
 
@@ -128,12 +161,19 @@ def borrow_item_ui():
 
 def return_items_ui():
     st.header("🔁 Return Items & Generate Bill")
-    user_id = st.text_input("User ID to Return Items")
+    user_id = st.text_input("Enter User ID")
     if st.button("Return Items"):
         try:
             ok = BorrowService.return_items(user_id)
             if ok is not None:
-                show_message(True, f"Returned items. Bill = {ok}")
+                st.markdown(f"""
+                <div class="bill-card">
+                  <h3>🧾 Return Bill</h3>
+                  <p><b>User ID:</b> {user_id}</p>
+                  <p><b>Total Amount:</b> ₹{ok}</p>
+                  <p>✅ Thank you for using the Community Borrowing System!</p>
+                </div>
+                """, unsafe_allow_html=True)
             else:
                 show_message(False, "Failed to return items.")
         except Exception as e:
@@ -146,7 +186,12 @@ def list_users_ui():
         st.info("No users found.")
     else:
         for u in users:
-            st.markdown(f"**{u['user_id']} - {u['name']}** • 📞 {u['phone_number']}")
+            st.markdown(f"""
+            <div class="card">
+              <b>{u['user_id']} - {u['name']}</b><br>
+              📞 {u['phone_number']}
+            </div>
+            """, unsafe_allow_html=True)
 
 def list_items_ui():
     st.header("📋 Items")
@@ -157,15 +202,10 @@ def list_items_ui():
         for it in items:
             color = "#10b981" if it.get("status","").lower() == "available" else "#ef4444"
             st.markdown(f"""
-            <div style="
-              background-color:#fff;
-              border-radius:10px;
-              padding:10px;
-              margin-bottom:6px;
-              box-shadow:0 2px 4px rgba(0,0,0,0.05);
-            ">
+            <div class="card">
               <b>{it['item_id']} - {it['item_name']}</b><br>
-              Cost: ₹{it.get('cost')} | <span style="color:{color}; font-weight:600">{it.get('status')}</span>
+              💰 Cost: ₹{it.get('cost')}<br>
+              <span style="color:{color}; font-weight:600">{it.get('status')}</span>
             </div>
             """, unsafe_allow_html=True)
 
