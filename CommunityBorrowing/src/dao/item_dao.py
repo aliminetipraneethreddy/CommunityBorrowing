@@ -24,11 +24,3 @@ class ItemDAO:
         """Fetch all items"""
         response = supabase.table("items").select("*").execute()
         return response.data
-    @staticmethod
-    def find_available_item_by_name(item_name: str):
-        items = ItemDAO.list_items() or []
-        name_lower = item_name.strip().lower()
-        for it in items:
-            if it.get("item_name","").strip().lower() == name_lower and it.get("status","").lower() == "available":
-                return it
-        return None
