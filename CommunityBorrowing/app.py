@@ -189,3 +189,50 @@ def list_users_ui():
         st.info("No users found.")
     else:
         for u in users:
+            st.markdown(f"""
+            <div class="card">
+              <b>{u['user_id']} - {u['name']}</b><br>
+              📞 {u['phone_number']}
+            </div>
+            """, unsafe_allow_html=True)
+
+def list_items_ui():
+    st.header("📋 Items")
+    items = ItemDAO.list_items() or []
+    if not items:
+        st.info("No items found.")
+    else:
+        for it in items:
+            color = "#10b981" if it.get("status","").lower() == "available" else "#ef4444"
+            st.markdown(f"""
+            <div class="card">
+              <b>{it['item_id']} - {it['item_name']}</b><br>
+              💰 Cost: ₹{it.get('cost')}<br>
+              <span style="color:{color}; font-weight:600">{it.get('status')}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+# === Main Navigation ===
+def main():
+    st.title("🤝 Community Borrowing System")
+
+    pages = {
+        "Create User": create_user_ui,
+        "Insert Item": insert_item_ui,
+        "Borrow Item": borrow_item_ui,
+        "Return & Bill": return_items_ui,
+        "List Users": list_users_ui,
+        "List Items": list_items_ui
+    }
+
+    # Keep only radio buttons for navigation
+    choice = st.radio(
+        "Menu",
+        list(pages.keys()),
+        horizontal=True
+    )
+
+    pages[choice]()
+
+if __name__ == "__main__":
+    main()
