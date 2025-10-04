@@ -4,233 +4,212 @@ from src.dao.user_dao import UserDAO
 from src.dao.item_dao import ItemDAO
 from src.dao.supabase_client import supabase
 
-# -----------------------
-# Custom CSS - Full Responsive Layout
-# -----------------------
-def load_css():
-    st.markdown("""
-        <style>
-        /* General Layout */
-        .block-container {
-            padding: 1rem;
-            max-width: 100% !important;
-        }
+# =============================
+# GLOBAL PAGE CONFIG
+# =============================
+st.set_page_config(
+    page_title="Community Borrowing System",
+    page_icon="🤝",
+    layout="centered"
+)
 
-        body {
-            background-color: #f5f7fa;
-        }
+# =============================
+# CUSTOM MOBILE-FIRST CSS
+# =============================
+st.markdown("""
+<style>
+/* Mobile-first approach */
+html, body, [class*="css"]  {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
 
-        /* Top Navigation Bar */
-        .nav-container {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 1.2rem;
-        }
+h1, h2, h3 {
+    text-align: center;
+    color: #2d3436;
+    font-weight: 700;
+}
 
-        .nav-button {
-            flex: 1 1 auto;
-            text-align: center;
-            background-color: #3498db;
-            color: white;
-            padding: 0.6rem;
-            margin: 0.2rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
+.stButton>button {
+    width: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
 
-        .nav-button:hover {
-            background-color: #2980b9;
-        }
+.stButton>button:hover {
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    transform: scale(1.02);
+}
 
-        /* Headings */
-        h1, h2 {
-            text-align: center;
-            color: #2C3E50;
-        }
+.stSelectbox, .stTextInput, .stNumberInput {
+    border-radius: 10px !important;
+    padding: 0.6rem !important;
+    font-size: 1rem !important;
+}
 
-        /* Cards */
-        .stForm, .stTable, .css-1r6slb0 {
-            background: #ffffff;
-            padding: 1rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 1rem;
-        }
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 3rem;
+    max-width: 600px;
+    margin: auto;
+}
+</style>
+""", unsafe_allow_html=True)
 
-        /* Buttons */
-        button[kind="primary"] {
-            background-color: #3498db !important;
-            color: white !important;
-            font-weight: 600 !important;
-            border-radius: 8px !important;
-            width: 100% !important;
-            padding: 0.7rem !important;
-        }
+# =============================
+# HELPER FUNCTIONS
+# =============================
 
-        /* Table responsiveness */
-        .stTable {
-            overflow-x: auto;
-        }
+def show_message(success, msg):
+    if success:
+        st.success(f"✅ {msg}")
+    else:
+        st.error(f"❌ {msg}")
 
-        input, select {
-            width: 100% !important;
-        }
 
-        /* Hide Streamlit default hamburger menu & footer */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        </style>
-    """, unsafe_allow_html=True)
-
-# -----------------------
-# Pages
-# -----------------------
+# =============================
+# PAGE FUNCTIONS
+# =============================
 
 def create_user_ui():
-    st.header("👤 Create User")
-    with st.form("create_user_form"):
-        name = st.text_input("Enter Name")
-        phone = st.text_input("Enter Phone Number")
-        submit = st.form_submit_button("➕ Create User")
-    if submit:
+    st.header("🧍 Create User")
+    name = st.text_input("Full Name")
+    phone = st.text_input("Phone Number")
+
+    if st.button("Create User"):
         if not name or not phone:
-            st.warning("⚠️ Please enter all details")
+            st.warning("Please enter both name and phone.")
+            return
+        result = UserDAO.create_user(name, phone)
+        if result:
+            show_message(True, f"User '{name}' created successfully!")
         else:
-            user = UserDAO.create_user(name, phone)
-            if user:
-                st.success(f"✅ User created: {user['name']} (ID: {user['user_id']})")
-            else:
-                st.error("❌ Failed to create user")
+            show_message(False, "Failed to create user.")
+
 
 def insert_item_ui():
-    st.header("📦 Insert Item")
-    with st.form("insert_item_form"):
-        name = st.text_input("Item Name")
-        cost = st.number_input("Cost", min_value=0.0, step=0.5)
-        submit = st.form_submit_button("➕ Add Item")
-    if submit:
+    st.header("📦 Insert New Item")
+    name = st.text_input("Item Name")
+    cost = st.number_input("Cost per Day", min_value=0.0, step=1.0)
+
+    if st.button("Add Item"):
         if not name:
-            st.warning("⚠️ Item name required")
+            st.warning("Please enter item name.")
+            return
+        result = ItemDAO.insert_item(name, cost)
+        if result:
+            show_message(True, f"Item '{name}' added successfully!")
         else:
-            item = ItemDAO.insert_item(name, cost)
-            if item:
-                st.success(f"✅ Item added: {item['item_name']} (ID: {item['item_id']})")
-            else:
-                st.error("❌ Failed to add item")
+            show_message(False, "Failed to add item.")
+
 
 def borrow_item_ui():
-    st.header("📑 Borrow Item")
-    users = UserDAO.list_users()
-    items = ItemDAO.list_items()
+    st.header("📥 Borrow Item")
 
-    if not users or not items:
-        st.warning("⚠️ Need users and items before borrowing.")
-        return
+    users = UserDAO.list_users() or []
+    items = ItemDAO.list_items() or []
 
-    user_choice = st.selectbox("Select User", [f"{u['user_id']} - {u['name']}" for u in users])
-    item_choice = st.selectbox("Select Item", [f"{i['item_id']} - {i['item_name']} ({i['status']})" for i in items])
-    borrow_btn = st.button("📥 Borrow Item")
-
-    if borrow_btn:
-        user_id = int(user_choice.split(" - ")[0])
-        item_id = int(item_choice.split(" - ")[0])
-        result = BorrowService.borrow_item(user_id, item_id)
-        if result:
-            st.success("✅ Item borrowed successfully")
-        else:
-            st.error("❌ Failed to borrow item")
-
-def return_items_ui():
-    st.header("🔄 Return Items & Generate Bill")
-    users = UserDAO.list_users()
+    available_items = [i for i in items if i.get("status", "").lower() == "available"]
 
     if not users:
-        st.warning("⚠️ No users found")
+        st.warning("No users found. Please create a user first.")
+        return
+    if not available_items:
+        st.warning("No items available to borrow.")
         return
 
-    user_choice = st.selectbox("Select User", [f"{u['user_id']} - {u['name']}" for u in users])
-    return_btn = st.button("📤 Return Items")
+    user_choice = st.selectbox(
+        "Select User",
+        [f"{u['user_id']} - {u['name']}" for u in users]
+    )
+    item_choice = st.selectbox(
+        "Select Item",
+        [f"{i['item_id']} - {i['item_name']} (available)" for i in available_items]
+    )
 
-    if return_btn:
-        user_id = int(user_choice.split(" - ")[0])
-        bill = BorrowService.return_items(user_id)
-        if bill:
-            st.success(f"✅ Items returned. Total Bill: ₹{bill}")
-        else:
-            st.error("❌ Failed to return items")
+    if st.button("📦 Borrow Item"):
+        try:
+            user_id = int(user_choice.split(" - ")[0])
+            # Extract item name (BorrowService expects name)
+            name_part = item_choice.split(" - ", 1)[1]
+            item_name = name_part.rsplit("(", 1)[0].strip()
 
-def list_all_users_ui():
+            result = BorrowService.borrow_item(user_id, item_name)
+            if result:
+                show_message(True, f"'{item_name}' borrowed successfully!")
+            else:
+                show_message(False, f"Could not borrow '{item_name}'. Check logs.")
+        except Exception as e:
+            show_message(False, f"Error: {e}")
+
+
+def return_item_ui():
+    st.header("🔁 Return Items & Generate Bill")
+    user_choice = st.text_input("Enter User ID")
+
+    if st.button("Return Items"):
+        try:
+            result = BorrowService.return_items(user_choice)
+            if result:
+                show_message(True, "Items returned and bill generated successfully!")
+            else:
+                show_message(False, "Failed to return items.")
+        except Exception as e:
+            show_message(False, f"Error: {e}")
+
+
+def list_users_ui():
     st.header("👥 All Users")
-    users = UserDAO.list_users()
+    users = UserDAO.list_users() or []
     if not users:
-        st.warning("⚠️ No users found")
+        st.info("No users found.")
         return
-    st.table(users)
+    for u in users:
+        st.markdown(f"**{u['user_id']} - {u['name']}**  📞 {u['phone_number']}")
 
-def list_all_items_ui():
-    st.header("📦 All Items")
-    items = ItemDAO.list_items()
+
+def list_items_ui():
+    st.header("📋 All Items")
+    items = ItemDAO.list_items() or []
     if not items:
-        st.warning("⚠️ No items found")
+        st.info("No items found.")
         return
-    st.table(items)
+    for i in items:
+        status_color = "#10b981" if i["status"].lower() == "available" else "#ef4444"
+        st.markdown(f"""
+        <div style='background-color:#fff;border-radius:10px;padding:10px;margin-bottom:6px;
+        box-shadow:0 2px 4px rgba(0,0,0,0.05)'>
+        <b>{i['item_id']} - {i['item_name']}</b><br>
+        💲 {i['cost']} | 
+        <span style='color:{status_color};font-weight:600'>{i['status']}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-# -----------------------
-# Main App
-# -----------------------
+# =============================
+# MAIN NAVIGATION
+# =============================
 
 def main():
-    st.set_page_config(page_title="Community Borrowing System", page_icon="🤝", layout="centered")
-    load_css()
     st.title("🤝 Community Borrowing System")
 
-    # Create a top navigation bar (mobile-friendly)
-    nav_options = ["Create User", "Insert Item", "Borrow Item", "Return Items", "All Users", "All Items"]
-    nav_labels = {
-        "Create User": "👤",
-        "Insert Item": "📦",
-        "Borrow Item": "📑",
-        "Return Items": "🔄",
-        "All Users": "👥",
-        "All Items": "📋"
+    pages = {
+        "Create User": create_user_ui,
+        "Insert Item": insert_item_ui,
+        "Borrow Item": borrow_item_ui,
+        "Return Items & Bill": return_item_ui,
+        "List Users": list_users_ui,
+        "List Items": list_items_ui
     }
 
-    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    cols = st.columns(len(nav_options))
-    selected_page = None
-    for i, page in enumerate(nav_options):
-        if cols[i].button(f"{nav_labels[page]} {page}"):
-            st.session_state["page"] = page
-    st.markdown("</div>", unsafe_allow_html=True)
+    choice = st.sidebar.radio("📍 Navigation", list(pages.keys()))
 
-    # Default page
-    if "page" not in st.session_state:
-        st.session_state["page"] = "Create User"
-
-    selected_page = st.session_state["page"]
-
-    # Route to correct UI
-    if selected_page == "Create User":
-        create_user_ui()
-    elif selected_page == "Insert Item":
-        insert_item_ui()
-    elif selected_page == "Borrow Item":
-        borrow_item_ui()
-    elif selected_page == "Return Items":
-        return_items_ui()
-    elif selected_page == "All Users":
-        list_all_users_ui()
-    elif selected_page == "All Items":
-        list_all_items_ui()
-
+    # Render selected page
+    pages[choice]()
 
 if __name__ == "__main__":
     main()
