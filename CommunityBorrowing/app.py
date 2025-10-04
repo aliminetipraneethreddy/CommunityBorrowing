@@ -255,22 +255,20 @@ def main():
         "List Items": list_items_ui
     }
 
-    # horizontal nav bar
-    choice = st.radio(
-        "Menu",
-        list(pages.keys()),
-        horizontal=True,
-        label_visibility="collapsed"
-    )
+    # --- Navigation with Buttons ---
+    cols = st.columns(len(pages))
+    clicked_page = None
+    for i, (name, func) in enumerate(pages.items()):
+        if cols[i].button(name, use_container_width=True):
+            clicked_page = name
 
-    # highlight active tab
-    st.markdown(f"""
-        <div class="nav-container">
-            {''.join([f'<button class="nav-button {"active" if c==choice else ""}">{c}</button>' for c in pages.keys()])}
-        </div>
-    """, unsafe_allow_html=True)
+    # Default page
+    if not clicked_page:
+        clicked_page = list(pages.keys())[0]
 
-    pages[choice]()
+    # Load selected page
+    pages[clicked_page]()
 
 if __name__ == "__main__":
     main()
+
