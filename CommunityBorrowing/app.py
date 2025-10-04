@@ -5,6 +5,72 @@ from src.dao.item_dao import ItemDAO
 from src.dao.supabase_client import supabase
 
 # -----------------------
+# Custom CSS for Mobile First
+# -----------------------
+def load_css():
+    st.markdown(
+        """
+        <style>
+        /* Mobile-first container */
+        .block-container {
+            padding: 1rem;
+            max-width: 100% !important;
+        }
+
+        /* Headings */
+        h1, h2, h3 {
+            text-align: center;
+            color: #2C3E50;
+        }
+
+        /* Cards */
+        .stForm, .stTable, .css-1r6slb0 {
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons */
+        button[kind="primary"] {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            width: 100%;
+            padding: 0.75rem;
+        }
+
+        button[kind="secondary"] {
+            background-color: #95a5a6;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            width: 100%;
+            padding: 0.75rem;
+        }
+
+        /* Sidebar */
+        section[data-testid="stSidebar"] {
+            background-color: #f8f9fa;
+        }
+
+        /* Table */
+        .stTable {
+            overflow-x: auto;
+        }
+
+        /* Responsive text inputs */
+        input, select {
+            width: 100% !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# -----------------------
 # UI Components
 # -----------------------
 
@@ -13,7 +79,7 @@ def create_user_ui():
     with st.form("create_user_form"):
         name = st.text_input("Enter Name")
         phone = st.text_input("Enter Phone Number")
-        submit = st.form_submit_button("Create User")
+        submit = st.form_submit_button("➕ Create User")
     if submit:
         if not name or not phone:
             st.warning("⚠️ Please enter all details")
@@ -30,7 +96,7 @@ def insert_item_ui():
     with st.form("insert_item_form"):
         name = st.text_input("Item Name")
         cost = st.number_input("Cost", min_value=0.0, step=0.5)
-        submit = st.form_submit_button("Add Item")
+        submit = st.form_submit_button("➕ Add Item")
     if submit:
         if not name:
             st.warning("⚠️ Item name required")
@@ -53,7 +119,7 @@ def borrow_item_ui():
 
     user_choice = st.selectbox("Select User", [f"{u['user_id']} - {u['name']}" for u in users])
     item_choice = st.selectbox("Select Item", [f"{i['item_id']} - {i['item_name']} ({i['status']})" for i in items])
-    borrow_btn = st.button("Borrow")
+    borrow_btn = st.button("📥 Borrow Item")
 
     if borrow_btn:
         user_id = int(user_choice.split(" - ")[0])
@@ -74,7 +140,7 @@ def return_items_ui():
         return
 
     user_choice = st.selectbox("Select User", [f"{u['user_id']} - {u['name']}" for u in users])
-    return_btn = st.button("Return Items")
+    return_btn = st.button("📤 Return Items")
 
     if return_btn:
         user_id = int(user_choice.split(" - ")[0])
@@ -108,10 +174,11 @@ def list_all_items_ui():
 
 def main():
     st.set_page_config(page_title="Community Borrowing System", page_icon="🤝", layout="wide")
+    load_css()
     st.title("🤝 Community Borrowing System")
 
     menu = st.sidebar.radio(
-        "Navigate",
+        "📍 Navigation",
         ["Create User", "Insert Item", "Borrow Item", "Return Items & Generate Bill", "List All Users", "List All Items"]
     )
 
