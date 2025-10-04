@@ -1,4 +1,4 @@
-import sys
+\import sys
 import os
 import streamlit as st
 
@@ -8,7 +8,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from services.borrow_service import BorrowService
 from dao.user_dao import UserDAO
 from dao.item_dao import ItemDAO
-from dao.supabase_client import supabase
 
 # === Page config & CSS ===
 st.set_page_config(page_title="Community Borrowing", page_icon="🤝", layout="centered")
@@ -255,22 +254,20 @@ def main():
         "List Items": list_items_ui
     }
 
-    # horizontal nav bar
-    choice = st.radio(
-        "Menu",
-        list(pages.keys()),
-        horizontal=True,
-        label_visibility="collapsed"
-    )
+    # --- Session state for active page ---
+    if "active_page" not in st.session_state:
+        st.session_state.active_page = list(pages.keys())[0]  # default first page
 
-    # highlight active tab
-    st.markdown(f"""
-        <div class="nav-container">
-            {''.join([f'<button class="nav-button {"active" if c==choice else ""}">{c}</button>' for c in pages.keys()])}
-        </div>
-    """, unsafe_allow_html=True)
+    # --- Custom nav bar ---
+    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+    cols = st.columns(len(pages))
+    for i, (name, func) in enumerate(pages.items()):
+        if cols[i].button(name, use_container_width=True):
+            st.session_state.active_page = name
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    pages[choice]()
+    # --- Render selected page ---
+    pages[st.session_state.active_page]()
 
 if __name__ == "__main__":
     main()
