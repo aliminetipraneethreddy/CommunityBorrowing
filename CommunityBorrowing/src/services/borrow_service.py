@@ -1,6 +1,7 @@
 from src.dao.user_dao import UserDAO
 from src.dao.item_dao import ItemDAO
 from src.dao.borrow_dao import BorrowDAO
+import datetime
 
 class BorrowService:
     @staticmethod
@@ -24,14 +25,32 @@ class BorrowService:
     def return_items(user_id):
         borrowed_items = BorrowDAO.get_borrowed_items_by_user(user_id)
         if not borrowed_items:
-            return None, 0
+            return None
 
+        bill_items = []
         total_cost = 0
-        costs = []
+
         for record in borrowed_items:
             item = record["items"]
-            total_cost += item["cost"]
-            costs.append(item["cost"])
+            borrowed_date = datetime.datetime.fromisoformat(record["borrowed_date"])
+            days = (datetime.datetime.now() - borrowed_date).days or 1
+            cost_per_day = float(item["cost"])
+            item_total = days * cost_per_day
 
+            bill_items.append({
+                "item_name": item["item_name"],
+                "days": days,
+                "cost": cost_per_day,
+                "total": item_total
+            })
+            total_cost += item_total
+
+        # Mark items returned in DB
         BorrowDAO.return_items(user_id)
-        return costs, total_cost
+        for record in borrowed_items:
+            ItemDAO.update_item_status(record["items"]["item_id"], "available")
+
+        return {
+            "items": bill_items,
+            "total": total_cost
+        }
