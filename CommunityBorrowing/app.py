@@ -153,34 +153,12 @@ def borrow_item_ui():
 
             ok = BorrowService.borrow_item(user_id, item_name)
             if ok:
-                # ✨ Borrow Card UI
-                st.markdown(f"""
-                <div style="
-                  background:white;
-                  border-radius:12px;
-                  padding:16px;
-                  margin-top:15px;
-                  box-shadow:0 3px 8px rgba(0,0,0,0.1);
-                  font-size:1rem;
-                ">
-                  <div style="font-weight:600; font-size:1.1rem; margin-bottom:8px; color:#16a34a;">
-                    ✅ Borrow Successful
-                  </div>
-                  <div style="margin-bottom:6px;">
-                    <b>User:</b> {user_choice}
-                  </div>
-                  <div style="margin-bottom:6px;">
-                    <b>Item:</b> {item_name}
-                  </div>
-                  <div style="margin-bottom:6px;">
-                    <b>Status:</b> <span style="color:#16a34a; font-weight:600;">Borrowed</span>
-                  </div>
-                </div>
-                """, unsafe_allow_html=True)
+                show_message(True, f"Borrowed '{item_name}' successfully.")
             else:
                 show_message(False, f"Could not borrow '{item_name}'.")
         except Exception as e:
             show_message(False, f"Error: {e}")
+
 def return_items_ui():
     st.header("🔁 Return Items & Generate Bill")
     user_id = st.text_input("Enter User ID")
@@ -261,4 +239,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
